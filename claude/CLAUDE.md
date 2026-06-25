@@ -4,7 +4,6 @@ This plugin provides tmux integration for Claude Code.
 
 ## Features
 
-- **Auto-fork**: When running in tmux, automatically fork new sessions to a side pane
 - **New window**: Use `/new` to open a new Claude session in a new tmux window
 
 ## Installation
@@ -17,9 +16,9 @@ claude plugin install claude-tmux-session
 ## How It Works
 
 The plugin uses Claude's hook system:
-- `SessionStart` hook detects tmux environment and auto-forks sessions
+- `SessionStart` hook logs plugin activation
 - Skills provide `/new` command for opening new windows
 
-## Recursion Prevention
+## Note
 
-The plugin sets `FORKED_BY_PLUGIN=1` environment variable in forked panes to prevent infinite recursion.
+This plugin does NOT auto-fork sessions (unlike the opencode version). Use `/new` to create new sessions in new tmux windows.
