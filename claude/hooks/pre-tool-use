@@ -1,0 +1,31 @@
+#!/bin/bash
+# Claude tmux session plugin - PreToolUse hook
+# Intercepts /fork and /new commands to create tmux panels/windows
+
+INPUT=$(cat)
+
+# Check if this is a /fork command
+if echo "$INPUT" | grep -qE '"/fork"|/fork'; then
+  if [ -z "$TMUX_PANE" ]; then
+    echo '{"block": true, "reason": "Not in tmux — cannot fork"}'
+  elif tmux split-window -d "claude" 2>/dev/null; then
+    echo '{"block": true, "reason": "✓ Forked: new session opened in side pane"}'
+  else
+    echo '{"block": true, "reason": "✗ Fork failed: could not create side pane"}'
+  fi
+  exit 0
+fi
+
+# Check if this is a /new command
+if echo "$INPUT" | grep -qE '"/new"|/new'; then
+  if tmux new-window "claude" 2>/dev/null; then
+    echo '{"block": true, "reason": "✓ New session opened in new window"}'
+  else
+    echo '{"block": true, "reason": "✗ Failed to open new session"}'
+  fi
+  exit 0
+fi
+
+# Not a tmux command, allow it
+echo '{"block": false}'
+exit 0

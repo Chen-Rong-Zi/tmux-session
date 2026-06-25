@@ -14,9 +14,8 @@ claude plugin marketplace add Chen-Rong-Zi/tmux-session
 claude plugin install claude-tmux-session
 ```
 
-## Commands
+## How It Works
 
-| Command | Action |
-|---------|--------|
-| `/fork` | Creates a new tmux side pane with a forked session |
-| `/new` | Creates a new tmux window with a new session |
+The plugin uses Claude's PreToolUse hook to intercept commands:
+- When you type `/fork`, it creates a new tmux side pane with a Claude session
+- When you type `/new`, it creates a new tmux window with a Claude session
