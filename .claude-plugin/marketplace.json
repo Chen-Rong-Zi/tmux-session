@@ -1,0 +1,18 @@
+{
+  "name": "tmux-session",
+  "description": "Tmux session management plugins for OpenCode and Claude",
+  "owner": {
+    "name": "Chen-Rong-Zi"
+  },
+  "plugins": [
+    {
+      "name": "claude-tmux-session",
+      "description": "Tmux session integration for Claude — fork sessions to side panes and manage windows",
+      "version": "1.0.0",
+      "source": "./claude",
+      "author": {
+        "name": "Chen-Rong-Zi"
+      }
+    }
+  ]
+}
