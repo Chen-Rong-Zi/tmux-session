@@ -1,37 +1,17 @@
 #!/bin/bash
 # Claude tmux session plugin - SessionStart hook
-# Forks the session to a tmux side pane when running in tmux
+# Logs plugin activation, fork is handled by /fork skill
 
 LOG="/tmp/claude-tmux-session.log"
 log() { echo "[$(date +%s)] $1" >> "$LOG"; }
 
-log "session-start hook called"
+log "session-start: plugin loaded"
 
-# Recursion guard: check if we're already in a forked pane
-if [ "${FORKED_BY_PLUGIN:-}" = "1" ]; then
-  log "skipped: already in forked pane"
-  exit 0
-fi
-
-if [ -z "$TMUX_PANE" ]; then
-  log "skipped: not in tmux"
-  exit 0
-fi
-
-log "TMUX_PANE=$TMUX_PANE"
-
-# Read hook input from stdin
-INPUT=$(cat)
-log "input: $INPUT"
-
-# Fork to a tmux side pane
-log "forking..."
-if FORKED_BY_PLUGIN=1 tmux split-window -d "claude" 2>>"$LOG"; then
-  log "fork success"
-  tmux display-message -d 3000 "✓ Forked: new session opened in side pane"
+# Check if in tmux
+if [ -n "$TMUX_PANE" ]; then
+  log "session-start: running in tmux (pane $TMUX_PANE)"
 else
-  log "fork failed: exit=$?"
-  tmux display-message -d 3000 "✗ Fork failed: could not create side pane"
+  log "session-start: not in tmux"
 fi
 
 exit 0
