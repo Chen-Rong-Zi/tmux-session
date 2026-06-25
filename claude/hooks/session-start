@@ -1,0 +1,20 @@
+#!/bin/bash
+# Claude tmux session plugin - SessionStart hook
+# Forks the session to a tmux side pane when running in tmux
+
+if [ -z "$TMUX_PANE" ]; then
+  # Not in tmux, skip
+  exit 0
+fi
+
+# Get the current session ID from environment or generate one
+SESSION_ID="${CLAUDE_SESSION_ID:-$(date +%s)}"
+
+# Fork to a tmux side pane
+if tmux split-window -d "claude --session $SESSION_ID" 2>/dev/null; then
+  tmux display-message -d 3000 "✓ Forked: new session opened in side pane (${SESSION_ID:0:8})"
+else
+  tmux display-message -d 3000 "✗ Fork failed: could not create side pane"
+fi
+
+exit 0
