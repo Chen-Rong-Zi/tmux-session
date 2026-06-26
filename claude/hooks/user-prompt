@@ -3,6 +3,7 @@
 # Reads stdin JSON, checks prompt, blocks /fork and /branch, opens side pane
 
 INPUT=$(cat)
+echo "[$(date +%H:%M:%S)] HOOK FIRED. prompt=$(echo "$INPUT" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('prompt','')[:80])" 2>/dev/null)" >> /tmp/claude-tmux-debug.log
 
 # Guard: jq must be installed
 if ! command -v jq &>/dev/null; then
