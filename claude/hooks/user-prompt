@@ -1,6 +1,8 @@
 #!/bin/bash
-# UserPromptSubmit hook — intercept /fork and /branch, fork to tmux side pane
-# Reads stdin JSON, checks prompt, blocks /fork and /branch, opens side pane
+# UserPromptSubmit / UserPromptExpansion hook
+# Intercepts /fork, /branch, tmux-fork, tmux-new commands
+
+INPUT=$(cat)
 
 INPUT=$(cat)
 
@@ -10,31 +12,56 @@ if ! command -v jq &>/dev/null; then
   exit 0
 fi
 
+COMMAND_NAME=$(echo "$INPUT" | jq -r '.command_name // ""')
 PROMPT=$(echo "$INPUT" | jq -r '.prompt // ""')
 SESSION_ID=$(echo "$INPUT" | jq -r '.session_id // ""')
-# Trim whitespace without xargs (which re-interprets tokens)
-PROMPT="${PROMPT#"${PROMPT%%[![:space:]]*}"}"
-PROMPT="${PROMPT%"${PROMPT##*[![:space:]]}"}"
+ARGS=$(echo "$INPUT" | jq -r '.command_args // ""')
 
-case "$PROMPT" in
-  "/fork"|"/fork "*)
-    ARGS="${PROMPT#/fork}"
+# Strip namespace prefix from command_name: "claude-tmux-session:tmux-fork" -> "tmux-fork"
+CMD="${COMMAND_NAME#*:}"
+
+# Fallback: match on prompt for UserPromptSubmit path
+if [ -z "$CMD" ]; then
+  case "$PROMPT" in
+    "/tmux-fork"*|"/tmux-new"*)
+      CMD="tmux-${PROMPT#/tmux-}"
+      CMD="${CMD%% *}"
+      ARGS="${PROMPT#/* }"
+      ;;
+    *) exit 0 ;;
+  esac
+fi
+
+case "$CMD" in
+  "fork"|"branch"|"tmux-fork")
+    # Fork to side pane
+    if [ -z "$TMUX" ]; then
+      echo '{"decision":"block","reason":"✗ Not in tmux — cannot fork to side pane"}'
+      exit 0
+    fi
+    if [ -z "$SESSION_ID" ]; then
+      echo '{"decision":"block","reason":"✗ No session_id available — cannot fork"}'
+      exit 0
+    fi
+    if [ -n "$ARGS" ]; then
+      NEW_CMD="claude --resume $SESSION_ID --fork-session -p \"$ARGS\""
+    else
+      NEW_CMD="claude --resume $SESSION_ID --fork-session"
+    fi
+    if tmux split-window -d "$NEW_CMD" 2>/dev/null; then
+      echo "{\"decision\":\"block\",\"reason\":\"✓ Forked to side pane${ARGS:+ with prompt}\"}"
+    else
+      echo '{"decision":"block","reason":"✗ Fork failed: could not create side pane"}'
+    fi
     ;;
-  "/branch"|"/branch "*)
-    ARGS="${PROMPT#/branch}"
-    ;;
-  "/tmux-fork"|"/tmux-fork "*)
-    ARGS="${PROMPT#/tmux-fork}"
-    ;;
-  "/tmux-new"|"/tmux-new "*)
-    ARGS="${PROMPT#/tmux-new}"
-    # For /tmux-new, open a new tmux window instead of a side pane
+  "new"|"tmux-new")
+    # New session in new window
     if [ -z "$TMUX" ]; then
       echo '{"decision":"block","reason":"✗ Not in tmux — cannot open new window"}'
       exit 0
     fi
     if [ -n "$ARGS" ]; then
-      NEW_CMD="claude -p \"${ARGS# }\""
+      NEW_CMD="claude -p \"$ARGS\""
     else
       NEW_CMD="claude"
     fi
@@ -43,35 +70,8 @@ case "$PROMPT" in
     else
       echo '{"decision":"block","reason":"✗ Failed to open new window"}'
     fi
-    exit 0
     ;;
   *)
-    exit 0  # Not a fork command, allow through
+    exit 0
     ;;
 esac
-
-ARGS="${ARGS# }"  # Trim leading space
-
-# Guard: session_id must be available
-if [ -z "$SESSION_ID" ]; then
-  echo '{"decision":"block","reason":"✗ No session_id available — cannot fork"}'
-  exit 0
-fi
-
-# Build command for the new session
-if [ -n "$ARGS" ]; then
-  NEW_CMD="claude --resume $SESSION_ID --fork-session -p \"$ARGS\""
-else
-  NEW_CMD="claude --resume $SESSION_ID --fork-session"
-fi
-
-if [ -z "$TMUX" ]; then
-  echo '{"decision":"block","reason":"✗ Not in tmux — cannot fork to side pane"}'
-  exit 0
-fi
-
-if tmux split-window -d "$NEW_CMD" 2>/dev/null; then
-  echo "{\"decision\":\"block\",\"reason\":\"✓ Forked to side pane${ARGS:+ with prompt}\"}"
-else
-  echo '{"decision":"block","reason":"✗ Fork failed: could not create side pane"}'
-fi
