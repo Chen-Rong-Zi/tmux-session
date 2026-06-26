@@ -1,0 +1,39 @@
+#!/bin/bash
+# UserPromptSubmit hook — intercept /fork and /branch, fork to tmux side pane
+# Reads stdin JSON, checks prompt, blocks /fork and /branch, opens side pane
+
+INPUT=$(cat)
+PROMPT=$(echo "$INPUT" | jq -r '.prompt // ""' | xargs)
+SESSION_ID=$(echo "$INPUT" | jq -r '.session_id // ""')
+
+case "$PROMPT" in
+  "/fork"|"/fork "*)
+    ARGS="${PROMPT#/fork}"
+    ;;
+  "/branch"|"/branch "*)
+    ARGS="${PROMPT#/branch}"
+    ;;
+  *)
+    exit 0  # Not a fork command, allow through
+    ;;
+esac
+
+ARGS="${ARGS# }"  # Trim leading space
+
+# Build command for the new session
+if [ -n "$ARGS" ]; then
+  NEW_CMD="claude --resume $SESSION_ID --fork-session -p \"$ARGS\""
+else
+  NEW_CMD="claude --resume $SESSION_ID --fork-session"
+fi
+
+if [ -z "$TMUX" ]; then
+  echo '{"decision":"block","reason":"✗ Not in tmux — cannot fork to side pane"}'
+  exit 0
+fi
+
+if tmux split-window -d "$NEW_CMD" 2>/dev/null; then
+  echo "{\"decision\":\"block\",\"reason\":\"✓ Forked to side pane${ARGS:+ with prompt}\"}"
+else
+  echo '{"decision":"block","reason":"✗ Fork failed: could not create side pane"}'
+fi
