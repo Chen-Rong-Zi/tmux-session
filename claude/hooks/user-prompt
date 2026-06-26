@@ -3,8 +3,18 @@
 # Reads stdin JSON, checks prompt, blocks /fork and /branch, opens side pane
 
 INPUT=$(cat)
-PROMPT=$(echo "$INPUT" | jq -r '.prompt // ""' | xargs)
+
+# Guard: jq must be installed
+if ! command -v jq &>/dev/null; then
+  echo '{"decision":"block","reason":"✗ jq is required but not installed (install: brew install jq or apt-get install jq)"}'
+  exit 0
+fi
+
+PROMPT=$(echo "$INPUT" | jq -r '.prompt // ""')
 SESSION_ID=$(echo "$INPUT" | jq -r '.session_id // ""')
+# Trim whitespace without xargs (which re-interprets tokens)
+PROMPT="${PROMPT#"${PROMPT%%[![:space:]]*}"}"
+PROMPT="${PROMPT%"${PROMPT##*[![:space:]]}"}"
 
 case "$PROMPT" in
   "/fork"|"/fork "*)
@@ -19,6 +29,12 @@ case "$PROMPT" in
 esac
 
 ARGS="${ARGS# }"  # Trim leading space
+
+# Guard: session_id must be available
+if [ -z "$SESSION_ID" ]; then
+  echo '{"decision":"block","reason":"✗ No session_id available — cannot fork"}'
+  exit 0
+fi
 
 # Build command for the new session
 if [ -n "$ARGS" ]; then
