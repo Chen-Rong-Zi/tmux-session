@@ -1,7 +1,7 @@
 {
   "name": "claude-tmux-session",
   "description": "Tmux session integration for Claude — fork sessions to side panes and manage windows",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "author": {
     "name": "Chen-Rong-Zi"
   },
