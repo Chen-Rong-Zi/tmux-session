@@ -4,8 +4,6 @@
 
 INPUT=$(cat)
 
-INPUT=$(cat)
-
 # Guard: jq must be installed
 if ! command -v jq &>/dev/null; then
   echo '{"decision":"block","reason":"✗ jq is required but not installed (install: brew install jq or apt-get install jq)"}'
