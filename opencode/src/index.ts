@@ -19,7 +19,7 @@ export const TmuxSessionPlugin: Plugin = async ({ $, client }) => {
         // Use SDK to fork the session — this does NOT trigger session.created
         const fork = await client.session.fork({ path: { id: sessionID } });
         if (!fork.data) {
-          log(`fork error: ${fork.error}`);
+          log(`fork failed: ${fork.error ?? "no error detail"}`);
           output.parts = [{ type: "text", text: "Fork failed: SDK error." }] as any;
           return;
         }
@@ -32,6 +32,8 @@ export const TmuxSessionPlugin: Plugin = async ({ $, client }) => {
           await $`tmux display-message -d 5000 "✓ Forked: new session opened in side pane (${newId.slice(0, 8)})"`.nothrow();
         } else {
           await $`tmux display-message -d 5000 "✗ Fork failed: could not create side pane"`.nothrow();
+          // Clean up the orphaned forked session
+          await client.session.delete({ path: { id: newId } }).catch(() => {});
         }
 
         // Replace command output — prevents original session from switching.
@@ -40,7 +42,7 @@ export const TmuxSessionPlugin: Plugin = async ({ $, client }) => {
           type: "text",
           text: r.exitCode === 0
             ? `Session forked to side pane.`
-            : `Fork failed: could not create side pane.`,
+            : `Fork failed: created but could not open side pane.`,
         }] as any;
 
         log(`exit=${r.exitCode}`);
