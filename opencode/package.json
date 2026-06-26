@@ -1,6 +1,6 @@
 {
   "name": "opencode-tmux-session",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "OpenCode plugin — fork sessions to tmux side panes and open new sessions in tmux windows with status notifications",
   "type": "module",
   "main": "dist/index.js",
