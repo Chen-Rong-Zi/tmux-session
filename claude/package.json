@@ -1,6 +1,6 @@
 {
   "name": "claude-tmux-session",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Claude plugin — tmux fork integration via UserPromptSubmit hook",
   "type": "module",
   "main": "hooks/session-start"

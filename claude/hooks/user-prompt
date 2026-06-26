@@ -23,6 +23,28 @@ case "$PROMPT" in
   "/branch"|"/branch "*)
     ARGS="${PROMPT#/branch}"
     ;;
+  "/tmux-fork"|"/tmux-fork "*)
+    ARGS="${PROMPT#/tmux-fork}"
+    ;;
+  "/tmux-new"|"/tmux-new "*)
+    ARGS="${PROMPT#/tmux-new}"
+    # For /tmux-new, open a new tmux window instead of a side pane
+    if [ -z "$TMUX" ]; then
+      echo '{"decision":"block","reason":"✗ Not in tmux — cannot open new window"}'
+      exit 0
+    fi
+    if [ -n "$ARGS" ]; then
+      NEW_CMD="claude -p \"${ARGS# }\""
+    else
+      NEW_CMD="claude"
+    fi
+    if tmux new-window "$NEW_CMD" 2>/dev/null; then
+      echo "{\"decision\":\"block\",\"reason\":\"✓ New session opened in new window${ARGS:+ with prompt}\"}"
+    else
+      echo '{"decision":"block","reason":"✗ Failed to open new window"}'
+    fi
+    exit 0
+    ;;
   *)
     exit 0  # Not a fork command, allow through
     ;;
