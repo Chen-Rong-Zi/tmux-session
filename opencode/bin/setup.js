@@ -12,15 +12,18 @@ const CONFIG_PATH = join(OCODE, "opencode.json");
 
 let ok = true;
 
-const cmdSrc = join(PKG, "commands", "new-session.md");
-const cmdDst = join(COMMANDS_DIR, "new-session.md");
-if (existsSync(cmdSrc)) {
-  if (!existsSync(COMMANDS_DIR)) mkdirSync(COMMANDS_DIR, { recursive: true });
-  copyFileSync(cmdSrc, cmdDst);
-  console.log(`✓ Installed command: ${cmdDst}`);
-} else {
-  console.error(`✗ Command file not found: ${cmdSrc}`);
-  ok = false;
+const CMDS = ["new-session.md", "tmux-fork.md"];
+for (const cmd of CMDS) {
+  const cmdSrc = join(PKG, "commands", cmd);
+  const cmdDst = join(COMMANDS_DIR, cmd);
+  if (existsSync(cmdSrc)) {
+    if (!existsSync(COMMANDS_DIR)) mkdirSync(COMMANDS_DIR, { recursive: true });
+    copyFileSync(cmdSrc, cmdDst);
+    console.log(`✓ Installed command: ${cmdDst}`);
+  } else {
+    console.error(`✗ Command file not found: ${cmdSrc}`);
+    ok = false;
+  }
 }
 
 if (existsSync(CONFIG_PATH)) {
